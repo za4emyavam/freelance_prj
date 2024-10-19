@@ -1,0 +1,33 @@
+backend/freelance/HELP.md
+backend/freelance/target/
+!backend/freelance/.mvn/wrapper/maven-wrapper.jar
+!**/backend/freelance/src/main/**/target/
+!**/backend/freelance/src/test/**/target/
+
+### STS ###
+backend/freelance/.apt_generated
+backend/freelance/.classpath
+backend/freelance/.factorypath
+backend/freelance/.project
+backend/freelance/.settings
+backend/freelance/.springBeans
+backend/freelance/.sts4-cache
+
+### IntelliJ IDEA ###
+backend/freelance/.idea
+backend/freelance/*.iws
+backend/freelance/*.iml
+backend/freelance/*.ipr
+
+### NetBeans ###
+backend/freelance/nbproject/private/
+backend/freelance/nbbuild/
+backend/freelance/dist/
+backend/freelance/nbdist/
+backend/freelance/.nb-gradle/
+backend/freelance/build/
+!**/backend/freelance/src/main/**/build/
+!**/backend/freelance/src/test/**/build/
+
+### VS Code ###
+backend/freelance/.vscode/
