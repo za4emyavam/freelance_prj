@@ -39,14 +39,13 @@ public class ContractorRest {
         return contractorService.getProfile();
     }
 
-    /*@GetMapping("/tasks")
-    public List<ActiveTaskDTO> getAllActiveTasksByFieldName(@RequestBody String name) {
-        return taskService.activeTasks(name);
-    }*/
-
     @GetMapping("/tasks")
-    public List<ActiveTaskDTO> getAllActiveTaskWithSort(@RequestParam String sort, @RequestBody String value) {
-        return taskService.activeTasksWithSort(sort, value);
+    public ActiveTaskResponseDTO getAllActiveTaskWithSort(@RequestParam(required = false) String sort,
+                                                        @RequestParam(required = false, defaultValue = "id_task") String orderBy,
+                                                        @RequestParam(required = false) String ordering,
+                                                        @RequestParam(required = false, defaultValue = "0") int offset,
+                                                        @RequestHeader(value = "Value", required = false) String value) {
+        return taskService.activeTasksWithSort(sort, value, orderBy, ordering, offset);
     }
 
     @GetMapping("/tasks/{taskId}")
@@ -57,6 +56,15 @@ public class ContractorRest {
     @PostMapping("/tasks/{taskId}")
     public RespondedContractor agreedToTask(@PathVariable Long taskId) {
         return taskService.agreedToTask(taskId);
+    }
+
+    @GetMapping("/tasks/contractor")
+    public ActiveTaskResponseDTO getAllContractorTaskWithSort(@RequestParam(required = false) String sort,
+                                                          @RequestParam(required = false, defaultValue = "id_task") String orderBy,
+                                                          @RequestParam(required = false) String ordering,
+                                                          @RequestParam(required = false, defaultValue = "0") int offset,
+                                                          @RequestHeader(value = "Value", required = false) String value) {
+        return taskService.contractorsTasksWithSort(sort, value, orderBy, ordering, offset);
     }
 
     @GetMapping("/fields")
@@ -71,7 +79,7 @@ public class ContractorRest {
 
     @GetMapping("/tasks/active")
     public List<ContractorTaskDTO> getAllActiveTasks() {
-        return taskService.getAllContractorTasks(Task.Status.PERFORMED);
+        return taskService.getAllContractorTasks(Task.Status.PERFORMING);
     }
 
     @PutMapping(value = "/user_info", consumes = "application/json")

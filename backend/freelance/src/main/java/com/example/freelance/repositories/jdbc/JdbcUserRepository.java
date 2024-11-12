@@ -3,27 +3,33 @@ package com.example.freelance.repositories.jdbc;
 import com.example.freelance.entities.User;
 import com.example.freelance.repositories.UserRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Repository
 public class JdbcUserRepository implements UserRepository {
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
-    public JdbcUserRepository(JdbcTemplate jdbcTemplate) {
+    public JdbcUserRepository(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
     public boolean existsByEmail(String email) {
+        String sql = "select * from \"user\" where email=:email";
+        Map<String, Object> params = new HashMap<>();
+        params.put("email", email);
         return !jdbcTemplate.query(
-                        "select * from \"user\" where email=?",
-                        this::mapToUser,
-                        email)
+                        sql,
+                        params,
+                        this::mapToUser)
                 .isEmpty();
     }
 
@@ -34,44 +40,56 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public Optional<User> getByEmail(String email) {
-        List<User> user = jdbcTemplate.query("select * from \"user\" where email=?",
-                this::mapToUser,
-                email);
+        String sql = "select * from \"user\" where email=:email";
+        Map<String, Object> params = new HashMap<>();
+        params.put("email", email);
+        List<User> user = jdbcTemplate.query(sql, params,
+                this::mapToUser);
         return user.isEmpty() ? Optional.empty() : Optional.of(user.getFirst());
     }
 
     @Override
     public User update(User user) {
-        jdbcTemplate.update("update \"user\" u set " +
-                        "name=?, second_name=?, surname=?, birth_date=?," +
-                        "gender=?, phone_num=?, about_me=? where email=?",
-                user.getName(),
-                user.getSecondName(),
-                user.getSurname(),
-                user.getBirthday(),
-                user.getGender(),
-                user.getPhoneNum(),
-                user.getAboutMe(),
-                user.getEmail());
+        String sql = "update \"user\" set " +
+                "name=:name, second_name=:second_name, surname=:surname, birth_date=:birth_date," +
+                "gender=:gender, phone_num=:phone_num, about_me=:about_me where email=:email";
+        Map<String, Object> params = new HashMap<>();
+        params.put("email", user.getEmail());
+        params.put("name", user.getName());
+        params.put("second_name", user.getSecondName());
+        params.put("surname", user.getSurname());
+        params.put("birth_date", user.getBirthday());
+        params.put("gender", user.getGender());
+        params.put("phone_num", user.getPhoneNum());
+        params.put("about_me", user.getAboutMe());
+        jdbcTemplate.update(sql, params);
 
         return user;
     }
 
     @Override
     public void deactivateProfileById(Long userId) {
+        String sql = "update \"user\" set status=:status where id_user=:id_user";
+        Map<String, Object> params = new HashMap<>();
+        params.put("status", User.UserStatus.DEACTIVATED.toString());
+        params.put("id_user", userId);
         jdbcTemplate.update(
-                "update \"user\" set status=?::user_status where id_user=?",
-                User.UserStatus.DEACTIVATED.toString(),
-                userId);
+                sql,
+                params);
     }
 
     @Override
     public boolean isUserActive(String email) {
+        String sql = "select status from \"user\" where email=:email";
+        Map<String, Object> params = new HashMap<>();
+        params.put("email", email);
+
         return User.UserStatus.valueOf(
                 jdbcTemplate.queryForObject(
-                        "select status from \"user\" where email=?",
-                        String.class,
-                        email)).equals(User.UserStatus.ACTIVE);
+                        sql,
+                        params,
+                        String.class))
+                .equals(User.UserStatus.ACTIVE);
     }
 
     private User mapToUser(ResultSet rs, int rowNum) throws SQLException {

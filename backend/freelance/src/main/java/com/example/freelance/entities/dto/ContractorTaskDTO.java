@@ -1,5 +1,6 @@
 package com.example.freelance.entities.dto;
 
+import com.example.freelance.entities.RespondedContractor;
 import com.example.freelance.entities.Task;
 import com.example.freelance.entities.TaskFile;
 import lombok.AllArgsConstructor;
@@ -28,4 +29,8 @@ public class ContractorTaskDTO {
     private String phoneNumber;
     private List<TaskFile> links;
     private Task.Status status;
+    private RespondedContractor.ContractorStatus contractorStatus;
+    private LocalDateTime feedbackDate;
+    private String reason;
+    private LocalDateTime recallDate;
 }

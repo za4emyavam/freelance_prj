@@ -36,19 +36,30 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-    public List<CustomerTaskDTO> getAllTasksForCustomer() {
+    public CustomerTaskResponseDTO getAllTasksForCustomer(String orderBy, String ordering, int offset) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long customerId = ((User) authentication.getPrincipal()).getIdUser();
 
-        List<Task> tasks = taskRepository.findAllByCustomerId(customerId);
-        List<CustomerTaskDTO> dtos = new ArrayList<>();
-        for (Task task : tasks) {
-            List<RespondedContractorDTO> contractors = taskRepository.getContractorsByTask(task.getIdTask());
-            FieldOfActivity fieldOfActivity = fieldOfActivityService.getById(task.getIdActivityField());
-            dtos.add(new CustomerTaskDTO(task, fieldOfActivity, contractors));
+        if (ordering == null || !ordering.equals("desc"))
+            ordering = "asc";
+
+        if (offset < 0)
+            offset = 0;
+
+        if (!orderBy.equals("id_task") && !orderBy.equals("cost") && !orderBy.equals("end_date") &&
+                !orderBy.equals("creation_date")) {
+            ordering = "id_task";
         }
 
-        return dtos;
+        List<Task> tasks = taskRepository.findAllByCustomerIdWithOrder(customerId, orderBy, ordering, offset);
+        List<CustomerTaskDTO> dtos = new ArrayList<>();
+        for (Task task : tasks) {
+            /*List<RespondedContractorDTO> contractors = taskRepository.getContractorsByTask(task.getIdTask());*/
+            FieldOfActivity fieldOfActivity = fieldOfActivityService.getById(task.getIdActivityField());
+            dtos.add(new CustomerTaskDTO(task, fieldOfActivity, null));
+        }
+
+        return new CustomerTaskResponseDTO(dtos, taskRepository.findAllByCustomerIdTotalCount(customerId));
     }
 
     public List<RespondedContractorDTO> getAllContractorsByTask(Long taskId) {
@@ -82,13 +93,12 @@ public class TaskService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!Objects.equals(task.getIdCustomer(), ((User) authentication.getPrincipal()).getIdUser()))
             throw new AccessDenied("Access denied");
-        if (!task.getStatus().equals(Task.Status.PERFORMED)) {
+        if (!task.getStatus().equals(Task.Status.PERFORMING)) {
             throw new TaskNotFound("Task with id " + taskId + " is not perfomed");
         }
 
         RespondedContractor contractor = taskRepository.getRespondedContractor(taskId, contractorId)
                 .orElseThrow(() -> new ContractorNotFound("Contractor with id " + contractorId + " does not exist"));
-
 
 
         return taskRepository.rejectAcceptedContractor(contractor.getIdRespondedContractor(), reason);
@@ -100,7 +110,7 @@ public class TaskService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (!Objects.equals(task.getIdCustomer(), ((User) authentication.getPrincipal()).getIdUser()))
             throw new AccessDenied("Access denied");
-        if (!task.getStatus().equals(Task.Status.PERFORMED)) {
+        if (!task.getStatus().equals(Task.Status.PERFORMING)) {
             throw new TaskNotFound("Task with id " + taskId + " is not perfomed");
         }
 
@@ -134,6 +144,15 @@ public class TaskService {
 
             oldTask.setIdActivityField(task.getIdActivityField());
         }
+        List<TaskFile> links = new ArrayList<>();
+        for (String link : task.getLinks()) {
+            TaskFile taskFile = new TaskFile();
+            taskFile.setIdTask(taskId);
+            taskFile.setLink(link);
+            links.add(taskFile);
+        }
+
+        oldTask.setLinks(links);
 
         return taskRepository.update(oldTask);
     }
@@ -148,19 +167,32 @@ public class TaskService {
         taskRepository.cancelTaskById(taskId);
     }
 
-    public List<ActiveTaskDTO> activeTasks(String fieldName) {
-        //Check if present
-        FieldOfActivity fieldOfActivity = fieldOfActivityService.getByName(fieldName);
-        if (!fieldOfActivity.getIsActive())
-            throw new FieldOfActivityNotFound("Field of activity with name \"" + fieldName +"\" is not active");
-
-        return taskRepository.findAllActiveByField(fieldName);
-    }
-
     public ContractorTaskDTO getContractorTaskById(Long taskId) {
-        return taskRepository.findContractorTaskById(taskId).orElseThrow(
+        ContractorTaskDTO task = taskRepository.findContractorTaskById(taskId).orElseThrow(
                 () -> new TaskNotFound("Task with id " + taskId + " not found")
         );
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        Optional<RespondedContractor> optionalRespondedContractor = taskRepository
+                .getRespondedContractor(taskId, ((User) authentication.getPrincipal()).getIdUser());
+
+        RespondedContractor contractor = optionalRespondedContractor.orElse(null);
+        if (!task.getStatus().equals(Task.Status.ACTIVE) && contractor == null) {
+            throw new ContractorNotFound("Contractor not found");
+        }
+
+        if (contractor != null) {
+            task.setFeedbackDate(contractor.getFeedbackDate());
+            task.setContractorStatus(contractor.getStatus());
+            Optional<RemovingReason> reason =
+                    taskRepository.findRemovingReasonByContractorId(contractor.getIdRespondedContractor());
+            if (reason.isPresent()) {
+                task.setReason(reason.get().getReason());
+                task.setRecallDate(reason.get().getRecallDate());
+            }
+        }
+
+        return task;
     }
 
     public RespondedContractor agreedToTask(Long taskId) {
@@ -182,25 +214,77 @@ public class TaskService {
         return taskRepository.findAllContractorTasksByStatus(userId, status);
     }
 
-    public List<ActiveTaskDTO> activeTasksWithSort(String sortBy, String value) {
-        switch (sortBy) {
-            case "field":
-                FieldOfActivity fieldOfActivity = fieldOfActivityService.getByName(value);
-                if (!fieldOfActivity.getIsActive())
-                    throw new FieldOfActivityNotFound("Field of activity with name \"" + value +"\" is not active");
+    public ActiveTaskResponseDTO activeTasksWithSort(String sortBy, String value, String orderBy, String ordering, int offset) {
+        if (ordering == null || !ordering.equals("desc"))
+            ordering = "asc";
 
-                return taskRepository.findAllActiveByField(value);
-            case "end_date":
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH);
-                LocalDate endDate;
-                try {
-                    endDate = LocalDate.parse(value, formatter);
-                } catch (DateTimeParseException exception) {
-                    throw new TaskNotFound("Problem with parsing the date: " + value);
-                }
-                return taskRepository.findAllActiveByEndDate(endDate);
-            default:
-                return null;
+        if (offset <= 0)
+            offset = 0;
+
+        if (!orderBy.equals("id_task") && !orderBy.equals("cost") && !orderBy.equals("end_date") &&
+                !orderBy.equals("creation_date")) {
+            ordering = "id_task";
         }
+
+        List<ActiveTaskDTO> tasks;
+
+        if (sortBy != null && sortBy.equals("field")) {
+            FieldOfActivity fieldOfActivity = fieldOfActivityService.getByName(value);
+            if (!fieldOfActivity.getIsActive())
+                throw new FieldOfActivityNotFound("Field of activity with name \"" + value + "\" is not active");
+
+            tasks = taskRepository.findAllActiveByField(value, orderBy, ordering, offset);
+            return new ActiveTaskResponseDTO(tasks, taskRepository.findAllActiveByFieldCount(value));
+        } else {
+            tasks = taskRepository.findAllActive(orderBy, ordering, offset);
+            int totalCount = taskRepository.findAllActiveCount();
+            return new ActiveTaskResponseDTO(tasks, totalCount);
+        }
+    }
+
+    public ActiveTaskResponseDTO contractorsTasksWithSort(String sort, String value, String orderBy, String ordering, int offset) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = ((User) authentication.getPrincipal()).getIdUser();
+
+        if (ordering == null || !ordering.equals("desc"))
+            ordering = "asc";
+
+        if (offset <= 0)
+            offset = 0;
+
+        if (!orderBy.equals("id_task") && !orderBy.equals("cost") && !orderBy.equals("end_date") &&
+                !orderBy.equals("creation_date")) {
+            ordering = "id_task";
+        }
+
+        List<ActiveTaskDTO> tasks;
+        if (sort != null && sort.equals("status") && value != null) {
+            if (value.equals("PERFORMING") || value.equals("DONE")) {
+                tasks = taskRepository.findAllContractorsTasksByStatus(userId, value, orderBy, ordering, offset);
+                return new ActiveTaskResponseDTO(tasks, taskRepository.findAllContractorsTasksCountByStatus(userId, value));
+            }
+            if (value.equals("REJECTED")) {
+                tasks = taskRepository.findAllContractorsRejectedTasks(userId, orderBy, ordering, offset);
+                return new ActiveTaskResponseDTO(tasks, taskRepository.findAllContractorsRejectedTasksCount(userId));
+            }
+        }
+
+        return null;
+    }
+
+    public CustomerTaskDTO getCustomerTaskByTaskId(Long taskId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long customerId = ((User) authentication.getPrincipal()).getIdUser();
+
+        Task task = taskRepository.read(taskId).orElseThrow(
+                () -> new TaskNotFound("Task with id: " + taskId + " not found"));
+
+        if (!Objects.equals(task.getIdCustomer(), customerId))
+            throw new AccessDenied("Access to task with id: " + taskId + " denied");
+
+        List<RespondedContractorDTO> contractors = taskRepository.getContractorsByTask(task.getIdTask());
+        FieldOfActivity fieldOfActivity = fieldOfActivityService.getById(task.getIdActivityField());
+
+        return new CustomerTaskDTO(task, fieldOfActivity, contractors);
     }
 }

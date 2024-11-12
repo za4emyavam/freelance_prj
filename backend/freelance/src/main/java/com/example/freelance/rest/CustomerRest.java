@@ -68,7 +68,7 @@ public class CustomerRest {
 
     @PostMapping("/tasks/{taskId}/rate/{value}")
     public ResponseEntity<Task> rateTask(@PathVariable Long taskId, @PathVariable Integer value) {
-        if (value < 0 || value > 5) {
+        if (value < 1 || value > 5) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
@@ -97,8 +97,15 @@ public class CustomerRest {
     }
 
     @GetMapping("/tasks")
-    public List<CustomerTaskDTO> getCustomerTasks() {
-        return taskService.getAllTasksForCustomer();
+    public CustomerTaskResponseDTO getCustomerTasks(@RequestParam(required = false, defaultValue = "id_task") String orderBy,
+                                                    @RequestParam(required = false) String ordering,
+                                                    @RequestParam(required = false, defaultValue = "0") int offset) {
+        return taskService.getAllTasksForCustomer(orderBy, ordering, offset);
+    }
+
+    @GetMapping("/tasks/{taskId}")
+    public CustomerTaskDTO getCustomerTask(@PathVariable Long taskId) {
+        return taskService.getCustomerTaskByTaskId(taskId);
     }
 
     @GetMapping("/contractors/{id}")

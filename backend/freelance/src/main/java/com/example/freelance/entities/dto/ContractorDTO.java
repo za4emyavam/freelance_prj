@@ -17,13 +17,13 @@ public class ContractorDTO {
     private String name;
     private String secondName;
     private String surname;
-    private String about;
+    private String aboutMe;
     private Double rating;
     private Integer taskCompleted;
     private List<ContractorProfileDTO.FieldRating> fieldRatingList;
     private LocalDate birthday;
     private String gender;
-    private String phoneNumber;
+    private String phoneNum;
 
     @Data
     @AllArgsConstructor
@@ -33,18 +33,18 @@ public class ContractorDTO {
         private Integer taskCompleted;
     }
 
-    public ContractorDTO(ContractorProfileDTO profileDTO, String phoneNumber, String gender, LocalDate birthday) {
+    public ContractorDTO(ContractorProfileDTO profileDTO, String phoneNum, String gender, LocalDate birthday) {
         this.userId = profileDTO.getUserId();
         this.email = profileDTO.getEmail();
         this.name = profileDTO.getName();
         this.secondName = profileDTO.getSecondName();
         this.surname = profileDTO.getSurname();
-        this.about = profileDTO.getAbout();
+        this.aboutMe = profileDTO.getAbout();
         this.rating = profileDTO.getRating();
         this.taskCompleted = profileDTO.getTaskCompleted();
         this.fieldRatingList = profileDTO.getFieldRatingList();
         this.birthday = birthday;
         this.gender = gender;
-        this.phoneNumber = phoneNumber;
+        this.phoneNum = phoneNum;
     }
 }

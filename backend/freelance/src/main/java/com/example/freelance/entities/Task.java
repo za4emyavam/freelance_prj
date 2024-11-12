@@ -28,6 +28,6 @@ public class Task {
     private List<TaskFile> links;
 
     public enum Status {
-        ACTIVE, PERFORMED, DONE, CANCELLED
+        ACTIVE, PERFORMING, DONE, CANCELLED
     }
 }

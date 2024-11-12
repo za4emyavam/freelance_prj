@@ -32,7 +32,7 @@ public class JdbcFieldOfActivityRepository implements FieldOfActivityRepository 
 
     @Override
     public List<FieldOfActivity> readAllActive() {
-        return jdbcTemplate.query("select * from field_of_activity where is_active=true",
+        return jdbcTemplate.query("select * from field_of_activity where is_active=1",
                 this::mapToFieldOfActivity);
     }
 

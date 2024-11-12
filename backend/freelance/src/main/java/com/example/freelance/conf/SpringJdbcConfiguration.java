@@ -9,11 +9,11 @@ import javax.sql.DataSource;
 @Configuration
 public class SpringJdbcConfiguration {
     @Bean
-    public DataSource getPostgresDataSource() {
+    public DataSource getMicrosoftSQLDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://localhost:5432/freelance_db");
-        dataSource.setUsername("postgres");
+        dataSource.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        dataSource.setUrl("jdbc:sqlserver://localhost:1433;databaseName=freelance_db;encrypt=true;trustServerCertificate=true;");
+        dataSource.setUsername("superadmin");
         dataSource.setPassword("admin");
         return dataSource;
     }

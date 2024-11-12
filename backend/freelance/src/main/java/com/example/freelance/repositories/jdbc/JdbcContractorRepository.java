@@ -29,14 +29,14 @@ public class JdbcContractorRepository implements ContractorRepository {
         }
         ContractorProfileDTO contractorProfileDTO = list.getFirst();
         jdbcTemplate.query(
-                "select * from get_contractor_rate(?::integer)",
+                "select * from get_contractor_rate(?)",
                 (resultSet, rowNum) -> {
                     contractorProfileDTO.setRating(resultSet.getDouble("avg_rating"));
                     contractorProfileDTO.setTaskCompleted(resultSet.getInt("completed_tasks_count"));
                     return null;
                 }, id);
 
-        contractorProfileDTO.setFieldRatingList(jdbcTemplate.query("select * from get_completed_tasks_by_field(?::integer)",
+        contractorProfileDTO.setFieldRatingList(jdbcTemplate.query("select * from get_completed_tasks_by_field(?)",
                 this::mapToFieldRating, id));
 
         return Optional.of(contractorProfileDTO);
@@ -80,14 +80,4 @@ public class JdbcContractorRepository implements ContractorRepository {
                 rs.getInt("completed_tasks_count")
         );
     }
-
-    /*private Long userId;
-    private String email;
-    private String name;
-    private String secondName;
-    private String surname;
-    private String about;
-    private Double rating;
-    private Integer taskCompleted;
-    private List<ContractorDTO.FieldRating> fieldRatingList;*/
 }

@@ -12,8 +12,10 @@ import com.example.freelance.repositories.TaskRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.core.PreparedStatementCreatorFactory;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -39,6 +41,7 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     @Override
+    @Transactional
     public Task save(CreateTaskDTO task) {
         PreparedStatementCreatorFactory factory = new PreparedStatementCreatorFactory(
                 "insert into task (id_customer, id_activity_field, name, end_date, cost, description) " +
@@ -62,24 +65,30 @@ public class JdbcTaskRepository implements TaskRepository {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(psc, keyHolder);
 
-        Long id = Long.parseLong(keyHolder.getKeys().get("id_task").toString());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH);
-        LocalDate date = LocalDate.parse(keyHolder.getKeys().get("creation_date").toString(), formatter);
+        Long id = ((Number) keyHolder.getKeys().get("GENERATED_KEYS")).longValue();
+
+        String fetchDefaultsQuery = "SELECT creation_date, status FROM task WHERE id_task = ?";
+        Map<String, Object> defaults = jdbcTemplate.queryForMap(fetchDefaultsQuery, id);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        LocalDateTime creationDate = LocalDateTime.parse(defaults.get("creation_date").toString().split("\\.")[0], formatter);
 
         Task createdTask = new Task();
         createdTask.setIdTask(id);
         createdTask.setIdCustomer(task.getIdCustomer());
         createdTask.setIdActivityField(task.getIdActivityField());
         createdTask.setName(task.getName());
-        createdTask.setCreationDate(date.atStartOfDay());
+        createdTask.setCreationDate(creationDate);
         createdTask.setEndDate(task.getEndDate());
         createdTask.setCost(task.getCost());
         createdTask.setDescription(task.getDescription());
-        createdTask.setStatus(Task.Status.valueOf(keyHolder.getKeys().get("status").toString()));
+        createdTask.setStatus(Task.Status.valueOf(defaults.get("status").toString()));
 
+        List<TaskFile> links = new ArrayList<>();
         for (String link : task.getLinks())
-            createdTask.getLinks().add(saveTaskFile(id, link));
+            links.add(saveTaskFile(id, link));
 
+        createdTask.setLinks(links);
         return createdTask;
     }
 
@@ -93,27 +102,49 @@ public class JdbcTaskRepository implements TaskRepository {
                 task.getCost(),
                 task.getIdActivityField(),
                 task.getIdTask());
+
+        jdbcTemplate.update(
+                "delete from task_file where id_task=?",
+                task.getIdTask()
+        );
+
+        List<TaskFile> links = new ArrayList<>();
+        for (TaskFile taskFile : task.getLinks())
+            links.add(saveTaskFile(taskFile.getIdTask(), taskFile.getLink()));
+
+        task.setLinks(links);
+
         return task;
     }
 
     @Override
     public void cancelTaskById(Long taskId) {
-        jdbcTemplate.update("update task set status=?::status where id_task=?",
+        jdbcTemplate.update("update task set status=? where id_task=?",
                 Task.Status.CANCELLED.toString(),
                 taskId);
     }
 
     @Override
-    public List<Task> findAllByCustomerId(Long customerId) {
+    public List<Task> findAllByCustomerIdWithOrder(Long customerId, String orderBy, String order, int offset) {
         return jdbcTemplate.query(
-                "select * from task where id_customer=?",
+                "select * from task where id_customer=? ORDER BY " + orderBy + " " + order + " OFFSET ? ROWS FETCH NEXT 5 ROWS ONLY",
                 this::mapToTask,
-                customerId);
+                customerId,
+                offset);
+    }
+
+    @Override
+    public int findAllByCustomerIdTotalCount(Long customerId) {
+        return jdbcTemplate.queryForObject(
+                "select count(id_task) from task where id_customer=?",
+                Integer.class,
+                customerId
+        );
     }
 
     @Override
     public List<RespondedContractorDTO> getContractorsByTask(Long taskId) {
-        return jdbcTemplate.query("select * from get_contractors_by_task(?::integer)",
+        return jdbcTemplate.query("select * from get_contractors_by_task(?)",
                 this::mapToRespondedContractorDTO, taskId);
     }
 
@@ -137,27 +168,113 @@ public class JdbcTaskRepository implements TaskRepository {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(psc, keyHolder);
 
-        Long id = Long.parseLong(keyHolder.getKeys().get("id_file").toString());
+        Long id = ((Number) keyHolder.getKeys().get("GENERATED_KEYS")).longValue();
 
         return new TaskFile(id, taskId, link);
     }
 
     @Override
-    public List<ActiveTaskDTO> findAllActiveByField(String fieldName) {
-        return jdbcTemplate.query(
-                "SELECT t.id_task, t.name, u.email, t.end_date, t.creation_date, f.id_field, f.field, t.cost FROM task t, field_of_activity f, \"user\" u " +
-                        "WHERE id_activity_field = f.id_field AND f.field=? AND u.id_user=t.id_customer AND t.status='ACTIVE'",
-                this::mapToActiveTaskDTO,
-                fieldName);
+    public List<ActiveTaskDTO> findAllActive(String orderBy, String ordering, int offset) {
+        String query = String.format("SELECT t.id_task, t.name, u.email, t.end_date, t.creation_date, f.id_field, f.field, t.cost " +
+                        "FROM task t " +
+                        "JOIN field_of_activity f ON t.id_activity_field = f.id_field " +
+                        "JOIN \"user\" u ON u.id_user = t.id_customer " +
+                        "WHERE t.status = ? " +
+                        "ORDER BY %s %s OFFSET ? ROWS FETCH NEXT 5 ROWS ONLY",
+                orderBy, ordering);
+
+        return jdbcTemplate.query(query, this::mapToActiveTaskDTO, "ACTIVE", offset);
     }
 
     @Override
-    public List<ActiveTaskDTO> findAllActiveByEndDate(LocalDate endDate) {
+    public int findAllActiveCount() {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(t.id_task) " +
+                        "FROM task t " +
+                        "JOIN field_of_activity f ON t.id_activity_field = f.id_field " +
+                        "JOIN \"user\" u ON u.id_user = t.id_customer " +
+                        "WHERE t.status = 'ACTIVE'",
+                Integer.class);
+    }
+
+    @Override
+    public List<ActiveTaskDTO> findAllActiveByField(String fieldName, String orderBy, String ordering, int offset) {
         return jdbcTemplate.query(
                 "SELECT t.id_task, t.name, u.email, t.end_date, t.creation_date, f.id_field, f.field, t.cost FROM task t, field_of_activity f, \"user\" u " +
-                        "WHERE id_activity_field = f.id_field AND u.id_user=t.id_customer AND end_date=?::date AND t.status='ACTIVE'",
+                        "WHERE id_activity_field = f.id_field AND f.field=? AND u.id_user=t.id_customer AND t.status='ACTIVE' " +
+                        "ORDER BY "+ orderBy + " " + ordering +" OFFSET ? ROWS FETCH NEXT 5 ROWS ONLY",
                 this::mapToActiveTaskDTO,
-                endDate.toString());
+                fieldName,
+                offset);
+    }
+
+    @Override
+    public List<ActiveTaskDTO> findAllContractorsTasksByStatus(Long contractorId, String status, String orderBy, String ordering, int offset) {
+        return jdbcTemplate.query(
+                "SELECT t.id_task, t.name, u.email, t.end_date, t.creation_date, f.id_field, f.field, t.cost " +
+                        "FROM task t " +
+                        "JOIN field_of_activity f ON t.id_activity_field = f.id_field " +
+                        "JOIN \"user\" u ON u.id_user = t.id_customer " +
+                        "JOIN responded_contractor rc ON rc.id_task = t.id_task " +
+                        "WHERE t.status = ? " +
+                        "AND rc.id_contractor = ? " +
+                        "AND rc.contractor_status <> 'REJECTED' " +
+                        "AND NOT EXISTS ( " +
+                        "    SELECT 1 FROM removing_reason rr " +
+                        "    WHERE rr.id_approved_contractor = rc.id_resp_contractor " +
+                        ") " +
+                        "ORDER BY " + orderBy + " " + ordering + " OFFSET ? ROWS FETCH NEXT 5 ROWS ONLY",
+                this::mapToActiveTaskDTO,
+                status,
+                contractorId,
+                offset
+        );
+    }
+
+    @Override
+    public int findAllContractorsTasksCountByStatus(Long contractorId, String status) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(t.id_task) " +
+                        "FROM task t, field_of_activity f, \"user\" u, responded_contractor rc " +
+                        "WHERE id_activity_field = f.id_field AND u.id_user=t.id_customer AND t.status=? " +
+                        "AND rc.id_task=t.id_task AND id_contractor=? AND rc.contractor_status <> 'REJECTED' ",
+                Integer.class,
+                status,
+                contractorId);
+    }
+
+    @Override
+    public List<ActiveTaskDTO> findAllContractorsRejectedTasks(Long contractorId, String orderBy, String ordering, int offset) {
+        return jdbcTemplate.query(
+                "SELECT t.id_task, t.name, u.email, t.end_date, t.creation_date, f.id_field, f.field, t.cost " +
+                        "FROM task t, field_of_activity f, \"user\" u, responded_contractor rc, removing_reason rr " +
+                        "WHERE id_activity_field = f.id_field AND u.id_user=t.id_customer " +
+                        "AND rc.id_task=t.id_task AND id_contractor=? AND rr.id_approved_contractor=rc.id_resp_contractor " +
+                        "ORDER BY "+ orderBy + " " + ordering +" OFFSET ? ROWS FETCH NEXT 5 ROWS ONLY",
+                this::mapToActiveTaskDTO,
+                contractorId,
+                offset
+        );
+    }
+
+    @Override
+    public int findAllContractorsRejectedTasksCount(Long contractorId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(t.id_task) " +
+                        "FROM task t, field_of_activity f, \"user\" u, responded_contractor rc, removing_reason rr " +
+                        "WHERE id_activity_field = f.id_field AND u.id_user=t.id_customer " +
+                        "AND rc.id_task=t.id_task AND id_contractor=? AND rr.id_approved_contractor=rc.id_resp_contractor",
+                Integer.class,
+                contractorId);
+    }
+
+    @Override
+    public int findAllActiveByFieldCount(String fieldName) {
+        return jdbcTemplate.queryForObject(
+                "SELECT count(t.id_task) FROM task t, field_of_activity f, \"user\" u " +
+                        "WHERE id_activity_field = f.id_field AND f.field=? AND u.id_user=t.id_customer AND t.status='ACTIVE' ",
+                Integer.class,
+                fieldName);
     }
 
     @Override
@@ -172,7 +289,7 @@ public class JdbcTaskRepository implements TaskRepository {
     @Override
     public void acceptContractor(Long taskId, Long contractorId) {
         jdbcTemplate.update(
-                "update responded_contractor set contractor_status='APPROVED'::contractor_status where id_task=? AND id_contractor=?",
+                "update responded_contractor set contractor_status='APPROVED' where id_task=? AND id_contractor=?",
                 taskId,
                 contractorId
         );
@@ -208,14 +325,19 @@ public class JdbcTaskRepository implements TaskRepository {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(psc, keyHolder);
 
-        Long id = Long.parseLong(keyHolder.getKeys().get("id_reason").toString());
+        Long id = ((Number) keyHolder.getKeys().get("GENERATED_KEYS")).longValue();
+
+        String fetchDefaultsQuery = "SELECT recall_date FROM removing_reason WHERE id_reason = ?";
+        Map<String, Object> defaults = jdbcTemplate.queryForMap(fetchDefaultsQuery, id);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
+        LocalDateTime recallDate = LocalDateTime.parse(defaults.get("recall_date").toString().split("\\.")[0], formatter);
+
         RemovingReason removedReason = new RemovingReason();
         removedReason.setIdReason(id);
         removedReason.setIdApprovedContractor(respondedContractorId);
         removedReason.setReason(reason);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
-        removedReason.setRecallDate(
-                LocalDateTime.parse(keyHolder.getKeys().get("recall_date").toString().split("\\.")[0], formatter));
+        removedReason.setRecallDate(recallDate);
 
 
         return removedReason;
@@ -251,33 +373,24 @@ public class JdbcTaskRepository implements TaskRepository {
     @Override
     public RespondedContractor agreeToTaskByTaskIdAndContractorId(Long taskId, Long contractId) {
         PreparedStatementCreatorFactory factory = new PreparedStatementCreatorFactory(
-                "insert into responded_contractor (id_task, id_contractor) " +
-                        "values (?, ?)",
+                "INSERT INTO responded_contractor (id_task, id_contractor) VALUES (?, ?)",
                 Types.INTEGER, Types.INTEGER
         );
-
         factory.setReturnGeneratedKeys(true);
-
-        PreparedStatementCreator psc = factory.newPreparedStatementCreator(
-                Arrays.asList(
-                        taskId,
-                        contractId
-                )
-        );
-
+        PreparedStatementCreator psc = factory.newPreparedStatementCreator(Arrays.asList(taskId, contractId));
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(psc, keyHolder);
 
-        Long id = Long.parseLong(keyHolder.getKeys().get("id_resp_contractor").toString());
+        Long id = ((Number) keyHolder.getKeys().get("GENERATED_KEYS")).longValue();
+
+        String fetchDefaultsQuery = "SELECT feedback_date, contractor_status FROM responded_contractor WHERE id_resp_contractor = ?";
+        Map<String, Object> defaults = jdbcTemplate.queryForMap(fetchDefaultsQuery, id);
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
-        LocalDateTime feedbackDate = LocalDateTime.parse(keyHolder.getKeys().get("feedback_date")
-                .toString().split("\\.")[0], formatter);
-        RespondedContractor.ContractorStatus status = RespondedContractor.ContractorStatus.valueOf(
-                keyHolder.getKeys().get("contractor_status").toString()
-        );
+        LocalDateTime feedbackDate = LocalDateTime.parse(defaults.get("feedback_date").toString().split("\\.")[0], formatter);
+        RespondedContractor.ContractorStatus status = RespondedContractor.ContractorStatus.valueOf(defaults.get("contractor_status").toString());
 
         return new RespondedContractor(id, taskId, contractId, status, feedbackDate);
-
     }
 
     @Override
@@ -287,8 +400,8 @@ public class JdbcTaskRepository implements TaskRepository {
                         " t.creation_date, f.id_field, f.field, t.cost, u.email, u.phone_num, t.status " +
                         "from task t, field_of_activity f, \"user\" u, responded_contractor rc " +
                         "where id_activity_field = f.id_field  AND u.id_user=t.id_customer AND rc.id_contractor=(?) " +
-                        "AND rc.id_task=t.id_task AND t.status=?::status " +
-                        "AND rc.contractor_status='APPROVED'::contractor_status",
+                        "AND rc.id_task=t.id_task AND t.status=? " +
+                        "AND rc.contractor_status='APPROVED'",
                 this::mapToContractorTaskDTO,
                 userId,
                 status.toString()
@@ -297,6 +410,16 @@ public class JdbcTaskRepository implements TaskRepository {
             contractorTaskDTO.setLinks(findTaskFileByTask(contractorTaskDTO.getTaskId()));
 
         return list;
+    }
+
+    @Override
+    public Optional<RemovingReason> findRemovingReasonByContractorId(Long respondedContractor) {
+        List<RemovingReason> list = jdbcTemplate.query(
+                "select * from removing_reason where id_approved_contractor=?",
+                this::mapToRemovingReason,
+                respondedContractor);
+
+        return list.isEmpty() ? Optional.empty() : Optional.of(list.getFirst());
     }
 
     private Task mapToTask(ResultSet rs, int rowNum) throws SQLException {
@@ -389,8 +512,21 @@ public class JdbcTaskRepository implements TaskRepository {
                 rs.getString("email"),
                 rs.getString("phone_num"),
                 null,
-                Task.Status.valueOf(rs.getString("status"))
+                Task.Status.valueOf(rs.getString("status")),
+                null,
+                null,
+                null,
+                null
 
+        );
+    }
+
+    private RemovingReason mapToRemovingReason(ResultSet rs, int rowNum) throws SQLException {
+        return new RemovingReason(
+                rs.getLong("id_reason"),
+                rs.getLong("id_approved_contractor"),
+                rs.getString("reason"),
+                rs.getTimestamp("recall_date").toLocalDateTime()
         );
     }
 }

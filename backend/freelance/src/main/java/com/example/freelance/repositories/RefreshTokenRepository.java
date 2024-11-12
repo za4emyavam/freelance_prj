@@ -10,4 +10,5 @@ public interface RefreshTokenRepository {
     Optional<RefreshToken> findByUsername(String username);
     void delete(RefreshToken token);
     RefreshToken save(RefreshToken token);
+    RefreshToken update(RefreshToken token);
 }

@@ -115,6 +115,10 @@ public class JwtService {
         refreshToken.setExpiryDate(expDate);
         refreshToken.setToken(generateRefreshToken(username, expDate));
         Optional<RefreshToken> oldToken = refreshTokenRepository.findByUsername(username);
+        if (oldToken.isPresent()) {
+            refreshToken.setTokenId(oldToken.get().getTokenId());
+            return refreshTokenRepository.update(refreshToken);
+        }
         oldToken.ifPresent(token -> refreshToken.setTokenId(token.getTokenId()));
         return refreshTokenRepository.save(refreshToken);
     }

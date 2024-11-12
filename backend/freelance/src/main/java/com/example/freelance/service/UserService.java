@@ -11,6 +11,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 //TODO EXCEPTIONS
 
 @Service
@@ -46,7 +48,9 @@ public class UserService {
     }
 
     public UserInfoDTO update(UpdateUserDTO updatedUser) {
-        User user = getByEmail(updatedUser.getEmail());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        User user = getByEmail(((User) authentication.getPrincipal()).getUsername());
 
         if (updatedUser.getName() != null)
             user.setName(updatedUser.getName());
@@ -65,6 +69,9 @@ public class UserService {
 
         if (updatedUser.getAboutMe() != null)
             user.setAboutMe(updatedUser.getAboutMe());
+
+        if (updatedUser.getGender() != null)
+            user.setGender(updatedUser.getGender());
 
         return new UserInfoDTO(userRepository.update(user));
     }

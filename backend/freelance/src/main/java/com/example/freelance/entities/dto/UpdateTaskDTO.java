@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -15,4 +16,5 @@ public class UpdateTaskDTO {
     private LocalDateTime endDate;
     private Double cost;
     private Long idActivityField;
+    private List<String> links;
 }

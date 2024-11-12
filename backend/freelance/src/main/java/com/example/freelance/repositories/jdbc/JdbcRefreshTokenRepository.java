@@ -12,7 +12,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,8 +66,19 @@ public class JdbcRefreshTokenRepository implements RefreshTokenRepository {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(psc, keyHolder);
 
-        Long id = Long.parseLong(keyHolder.getKeys().get("token_id").toString());
+        Long id = ((Number) keyHolder.getKeys().get("GENERATED_KEYS")).longValue();
         token.setTokenId(id);
+
+        return token;
+    }
+
+    @Override
+    public RefreshToken update(RefreshToken token) {
+        jdbcTemplate.update("update refresh_token set token=?, expiry_date=? where username=?",
+                token.getToken(),
+                token.getExpiryDate(),
+                token.getUsername()
+                );
 
         return token;
     }
