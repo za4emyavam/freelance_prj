@@ -11,6 +11,18 @@ export default function AuthProvider({children}) {
         return localStorage.getItem('isAuthenticated') === 'true';
     });
 
+    const requestInterceptor = apiClient.interceptors.request.use(
+        (config) => {
+            // retrieve accessToken from localStorage
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
+            return config;
+        },
+        (error) => Promise.reject(error)
+    );
+
     async function login(username, password) {
 
         try {
@@ -28,38 +40,57 @@ export default function AuthProvider({children}) {
                 localStorage.setItem("refreshToken", response.data.refreshToken)
 
 
-                apiClient.interceptors.request.use(
-                    (config) => {
-                        config.headers.Authorization = `Bearer ${response.data.accessToken}`
-                        return config
-                    }
-                )
+                apiClient.interceptors.request.use(requestInterceptor)
                 apiClient.interceptors.response.use(
                     response => response,
                     async error => {
                         const originalRequest = error.config;
 
-                        if (error.response.status === 403 && !originalRequest._retry) {
+                        if (error.response.status === 403 && !originalRequest._retry && error.response.data === "Token expired.") {
                             originalRequest._retry = true;
 
                             try {
                                 const refreshToken = localStorage.getItem('refreshToken');
-                                const response = await apiClient.post('/refresh', {refreshToken});
+
+                                // Запрашиваем новый accessToken
+                                const response = await apiClient.post('/refresh', { refreshToken });
                                 const newAccessToken = response.data.accessToken;
 
+                                // Обновляем accessToken и refreshToken в localStorage
                                 localStorage.setItem('accessToken', newAccessToken);
-                                apiClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+                                localStorage.setItem('refreshToken', response.data.refreshToken);
+
+                                // Удаляем request interceptor перед повторным запросом
+                                apiClient.interceptors.request.eject(requestInterceptor);
+
+                                // Обновляем заголовок Authorization для originalRequest
                                 originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
 
-                                return apiClient(originalRequest);
+                                // Повторяем запрос с новым токеном
+                                const newResponse = await apiClient(originalRequest);
+
+                                // Восстанавливаем request interceptor с обновленным токеном
+                                apiClient.interceptors.request.use(
+                                    (config) => {
+                                        const token = localStorage.getItem('accessToken');
+                                        if (token) {
+                                            config.headers.Authorization = `Bearer ${token}`;
+                                        }
+                                        return config;
+                                    },
+                                    (error) => Promise.reject(error)
+                                );
+
+                                return newResponse;
+
                             } catch (e) {
-                                console.error(e);
+                                console.error("Ошибка при обновлении токена:", e);
                             }
                         }
 
-                        return Promise.reject(error)
+                        return Promise.reject(error);
                     }
-                )
+                );
 
                 return true
             } else {

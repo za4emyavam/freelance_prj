@@ -12,9 +12,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 @Service
@@ -286,5 +283,15 @@ public class TaskService {
         FieldOfActivity fieldOfActivity = fieldOfActivityService.getById(task.getIdActivityField());
 
         return new CustomerTaskDTO(task, fieldOfActivity, contractors);
+    }
+
+    public int countTaskByStatus(PeriodRequestDTO period, Task.Status status) {
+        LocalDate dateTo = period.getTo().plusDays(1);
+        return taskRepository.countTaskByStatusWithPeriod(status, period.getFrom(), dateTo);
+    }
+
+    public int countNotDoneTasks(PeriodRequestDTO period) {
+        LocalDate dateTo = period.getTo().plusDays(1);
+        return taskRepository.countTaskWithNoDoneStatus(period.getFrom(), dateTo);
     }
 }

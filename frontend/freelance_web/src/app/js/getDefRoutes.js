@@ -5,7 +5,7 @@ export default function getDefRoutes() {
         case "CONTRACTOR":
             return "/contractor/tasks"
         case "ADMIN":
-            return "/temp"
+            return "/admin/statistic"
         default:
             return "/"
     }

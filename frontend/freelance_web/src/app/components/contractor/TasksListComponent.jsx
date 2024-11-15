@@ -90,13 +90,13 @@ export default function TasksListComponent() {
     return (
         <div className="flex justify-center mt-10">
             <div className="overflow-x-auto sm:rounded-lg w-3/4">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-400">
                     <caption
-                        className="p-5 text-2xl font-semibold text-left rtl:text-right text-gray-800 dark:bg-gray-300">
+                        className="p-5 text-2xl font-semibold text-left rtl:text-right text-gray-800 bg-gray-300">
                         <div className="flex justify-between items-center">
                             <div>
                                 All active tasks
-                                <p className="mt-1 text-lg font-normal text-gray-600 dark:text-gray-600">
+                                <p className="mt-1 text-lg font-normal text-gray-600">
                                     Browse a list
                                     of all active
                                     tasks that you can performed. You can sort it by field of activity, cost, end date
@@ -116,7 +116,7 @@ export default function TasksListComponent() {
                         </div>
 
                     </caption>
-                    <thead className="text-lg text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-lg uppercase bg-gray-700 text-gray-400">
                     <tr>
                         <th scope="col" className="px-6 py-3">
                             <div className="flex items-center">
@@ -160,9 +160,9 @@ export default function TasksListComponent() {
                         <th scope="col" className="px-6 py-3">
                             <div className="flex items-center">
                                 <div
-                                    className={orderBy === 'create_date' ? "flex items-center text-gray-300" : "flex items-center"}>
+                                    className={orderBy === 'creation_date' ? "flex items-center text-gray-300" : "flex items-center"}>
                                     Create date
-                                    <button onClick={() => handleOrderBy("create_date")}>
+                                    <button onClick={() => handleOrderBy("creation_date")}>
                                         <svg className="w-4 h-4 ms-1.5" aria-hidden="true"
                                              xmlns="http://www.w3.org/2000/svg"
                                              fill="currentColor" viewBox="0 0 24 24">
@@ -194,16 +194,16 @@ export default function TasksListComponent() {
                     <tbody>
                     {tasks.map((task) => (
                         <tr key={task.taskId}
-                            className="text-lg bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                            className="text-lg bg-gray-800 border-gray-700 hover:bg-gray-600"
                             onClick={() => {
                                 handleRetrieveTask(task.taskId)
                             }}>
                             <th scope="row"
-                                className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                className="px-6 py-4 font-medium whitespace-nowrap text-white">
                                 {task.taskId}
                             </th>
                             <th scope="row"
-                                className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                className="px-6 py-4 font-medium whitespace-nowrap text-white">
                                 {task.name}
                             </th>
                             <td className="px-6 py-4">

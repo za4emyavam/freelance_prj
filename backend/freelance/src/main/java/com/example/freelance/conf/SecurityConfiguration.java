@@ -46,10 +46,12 @@ public class SecurityConfiguration {
 
         http.sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        //http.addFilterBefore(accountStatusFilter, UsernamePasswordAuthenticationFilter.class);
         http.authorizeHttpRequests(request ->
                 request
-                        .requestMatchers("/v1/login", "/v1/refresh").permitAll()
+                        .requestMatchers("/v1/login", "/v1/refresh", "/v1/create").permitAll()
+                        .requestMatchers("/v1/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/v1/contractor/**").hasRole("CONTRACTOR")
+                        .requestMatchers("/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated());
         return http.build();
     }

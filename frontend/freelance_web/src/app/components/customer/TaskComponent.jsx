@@ -144,7 +144,7 @@ export default function TaskComponent() {
                             className="absolute text-center top-[400px] left-[120px] ">
                             {task.status === 'PERFORMING' && (
                                 <div
-                                    className="relative w-[150px] mt-3 font-semibold text-lg bg-green-500 dark:bg-green-500 rounded text-gray-100 hover:bg-green-600"
+                                    className="relative w-[150px] mt-3 font-semibold text-lg bg-green-500 rounded text-gray-100 hover:bg-green-600"
                                     onClick={toggleModalAccept}>
                                     <p className="p-2">
                                         Accept task
@@ -153,7 +153,7 @@ export default function TaskComponent() {
                             )}
 
                             <div
-                                className="relative w-[150px] mt-3 font-semibold text-lg bg-blue-500 dark:bg-blue-500 rounded text-gray-50 hover:bg-blue-600"
+                                className="relative w-[150px] mt-3 font-semibold text-lg bg-blue-500 rounded text-gray-50 hover:bg-blue-600"
                                 onClick={handleUpdate}>
                                 <p className="p-2">
                                     Update task
@@ -161,7 +161,7 @@ export default function TaskComponent() {
                             </div>
 
                             <div
-                                className="relative w-[150px] mt-3 font-semibold text-lg bg-red-500 dark:bg-red-500 rounded text-gray-50 hover:bg-red-600"
+                                className="relative w-[150px] mt-3 font-semibold text-lg bg-red-500 rounded text-gray-50 hover:bg-red-600"
                                 onClick={toggleModalCancel}>
                                 <p className="p-2">
                                     Cancel task
@@ -179,27 +179,27 @@ export default function TaskComponent() {
                             <div className="ml-3">
                                 {task.status === 'PERFORMING' ?
                                     <div
-                                        className="text-center font-semibold bg-purple-500 dark:bg-purple-500 rounded w-[130px] text-purple-950">
+                                        className="text-center font-semibold bg-purple-500 rounded w-[130px] text-purple-950">
                                         <p className="p-2">
                                             {task.status}
                                         </p>
                                     </div>
                                     : task.status === 'DONE' ?
                                         <div
-                                            className="text-center w-[130px] font-semibold bg-green-500 dark:bg-green-500 rounded text-green-950">
+                                            className="text-center w-[130px] font-semibold bg-green-500 rounded text-green-950">
                                             <p className="p-2">
                                                 {task.status}
                                             </p>
                                         </div>
                                         : task.status === 'ACTIVE' ?
                                             <div
-                                                className="text-center w-[130px] font-semibold bg-blue-500 dark:bg-blue-500 rounded text-blue-950">
+                                                className="text-center w-[130px] font-semibold bg-blue-500 rounded text-blue-950">
                                                 <p className="p-2">
                                                     {task.status}
                                                 </p>
                                             </div>
                                             : <div
-                                                className="text-center w-[130px] font-semibold bg-red-500 dark:bg-red-500 rounded text-red-950">
+                                                className="text-center w-[130px] font-semibold bg-red-500 rounded text-red-950">
                                                 <p className="p-2">
                                                     {task.status}
                                                 </p>
@@ -212,7 +212,7 @@ export default function TaskComponent() {
                     </div>
                     <div className="ml-20">
 
-                        <div className="mt-2 p-3 dark:bg-gray-800 dark:border-gray-700 rounded-lg text-gray-200">
+                        <div className="mt-2 p-3 bg-gray-800 border-gray-700 rounded-lg text-gray-200">
                             <div className="text-right">
                                 Date of creation:
                                 <span className="text-gray-300 ml-1">
@@ -527,21 +527,21 @@ const ListRequestedContractors = ({contractors, navigator, taskId, toggleModal})
 
     return (
         <div className="ml-20 mt-5">
-            <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 ">
+            <table className="w-full text-sm text-left rtl:text-right text-gray-400 ">
                 <caption
-                    className="p-5 text-2xl font-semibold text-left rtl:text-right text-gray-800 dark:bg-gray-300 rounded-t-lg">
+                    className="p-5 text-2xl font-semibold text-left rtl:text-right text-gray-800 bg-gray-300 rounded-t-lg">
 
                     <div className="flex justify-between items-center">
                         <div>
                             Contractors
-                            <p className="mt-1 text-lg font-normal text-gray-600 dark:text-gray-600">
+                            <p className="mt-1 text-lg font-normal text-gray-600">
                                 Browse a list of contractors who responded to your task.
                             </p>
                         </div>
                     </div>
 
                 </caption>
-                <thead className="text-lg text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                <thead className="text-lg uppercase bg-gray-700 text-gray-400">
                 <tr>
                     <th scope="col" className="px-6 py-3">
                         Email
@@ -564,12 +564,12 @@ const ListRequestedContractors = ({contractors, navigator, taskId, toggleModal})
                 <tbody>
                 {contractors.map((contractor) => (
                     <tr key={contractor.userId}
-                        className="text-lg bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        className="text-lg bg-gray-800 border-gray-700 hover:bg-gray-600"
                         onClick={() => handleClick(contractor.userId)}
                     >
                         {/*onClick={() => handleTaskClick(task.idTask)}*/}
                         <th scope="row"
-                            className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            className="px-6 py-4 font-medium whitespace-nowrap text-white">
                             {contractor.email}
                         </th>
                         <td className="px-6 py-4">

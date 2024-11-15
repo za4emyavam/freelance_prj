@@ -13,6 +13,10 @@ import UpdateProfileComponent from "./components/UpdateProfileComponent";
 import TasksListComponent from "./components/contractor/TasksListComponent";
 import ContractorTaskComponent from "./components/contractor/ContractorTaskComponent";
 import ContractorTaskListComponent from "./components/contractor/ContractorTaskListComponent";
+import RegistrationComponent from "./components/RegistrationComponent";
+import StatisticComponent from "./components/admin/StatisticComponent";
+import FieldsComponent from "./components/admin/FieldsComponent";
+import FieldComponent from "./components/admin/FieldComponent";
 
 function AuthenticatedRoute() {
     const authContext = useAuth()
@@ -47,6 +51,7 @@ export default function Main() {
                     <HeaderComponent/>
                     <Routes>
                         <Route path="/" element={<LoginComponent/>}/>
+                        <Route path="/registration" element={<RegistrationComponent/>}/>
                         <Route path="/customer" element={<RoleRoute role={'CUSTOMER'}/>}>
                             <Route path="tasks" element={<TasksComponent/>}/>
                             <Route path="tasks/:taskId" element={<TaskComponent/>}/>
@@ -61,6 +66,12 @@ export default function Main() {
                             <Route path="your_tasks" element={<ContractorTaskListComponent/>}/>
                             <Route path="profile" element={<ProfileComponent/>}/>
                             <Route path="profile/update" element={<UpdateProfileComponent/>}/>
+                        </Route>
+                        <Route path="/admin" element={<RoleRoute role={'ADMIN'}/>}>
+                            <Route path="statistic" element={<StatisticComponent/>}/>
+                            <Route path="fields" element={<FieldsComponent/>}/>
+                            <Route path="fields/:fieldId" element={<FieldComponent/>}/>
+                            <Route path="fields/create" element={<FieldComponent/>}/>
                         </Route>
                         <Route path="logout" element={<AuthenticatedRoute/>}>
                             <Route index element={<LogoutComponent/>}/>

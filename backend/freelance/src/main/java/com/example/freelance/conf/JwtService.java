@@ -4,6 +4,7 @@ import com.example.freelance.entities.RefreshToken;
 import com.example.freelance.entities.User;
 import com.example.freelance.repositories.RefreshTokenRepository;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.impl.lang.Function;
@@ -23,7 +24,7 @@ import java.util.Optional;
 
 @Service
 public class JwtService {
-    private static final long JWT_EXPIRATION = 6000000;
+    private static final long JWT_EXPIRATION = 600000;
     private final RefreshTokenRepository refreshTokenRepository;
 
     public JwtService(RefreshTokenRepository refreshTokenRepository) {
@@ -33,7 +34,7 @@ public class JwtService {
     @Value("${jwt.signing.key}")
     private String jwtSigningKey;
 
-    public String extractUserName(String token) {
+    public String extractUserName(String token) throws ExpiredJwtException {
         return extractClaim(token, Claims::getSubject);
     }
 

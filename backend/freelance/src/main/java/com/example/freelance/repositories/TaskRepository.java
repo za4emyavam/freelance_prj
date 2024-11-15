@@ -36,5 +36,6 @@ public interface TaskRepository {
     RespondedContractor agreeToTaskByTaskIdAndContractorId(Long taskId, Long contractId);
     List<ContractorTaskDTO> findAllContractorTasksByStatus(Long userId, Task.Status status);
     Optional<RemovingReason> findRemovingReasonByContractorId(Long respondedContractor);
-
+    int countTaskByStatusWithPeriod(Task.Status status, LocalDate from, LocalDate to);
+    int countTaskWithNoDoneStatus(LocalDate from, LocalDate to);
 }

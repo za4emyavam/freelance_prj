@@ -52,18 +52,22 @@ public class JdbcFieldOfActivityRepository implements FieldOfActivityRepository 
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(psc, keyHolder);
 
-        Long id = Long.parseLong(keyHolder.getKeys().get("id_field").toString());
+        Long id = ((Number) keyHolder.getKeys().get("GENERATED_KEYS")).longValue();
         fieldOfActivity.setIdField(id);
 
-        Boolean isActive = Boolean.parseBoolean(keyHolder.getKeys().get("is_active").toString());
-        fieldOfActivity.setIsActive(isActive);
+        boolean status = jdbcTemplate.queryForObject(
+                "SELECT is_active from field_of_activity where id_field=?",
+                Boolean.class,
+                id);
+
+        fieldOfActivity.setIsActive(status);
         return fieldOfActivity;
     }
 
     @Override
     public FieldOfActivity update(FieldOfActivity fieldOfActivity) {
         jdbcTemplate.update(
-                "update field_of_activity f set field=?, is_active=? where id_field=?",
+                "update field_of_activity set field=?, is_active=? where id_field=?",
                 fieldOfActivity.getField(),
                 fieldOfActivity.getIsActive(),
                 fieldOfActivity.getIdField()

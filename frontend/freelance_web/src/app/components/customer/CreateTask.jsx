@@ -17,7 +17,6 @@ export default function CreateTask() {
 
     function refreshPage() {
         setIsLoading(true)
-        console.log(taskId)
         if (taskId == null) {
             Promise.all([
                 retrieveFields(),
@@ -53,7 +52,7 @@ export default function CreateTask() {
             .max(5000, "Number must be 5000 dollars or less"),
         description: Yup.string().required("This field is required"),
         links: Yup.array().of(Yup.string().required("Link cannot be empty")).min(1, "At least one link is required"),
-    });
+    })
 
     const handleSubmit = (values) => {
         if (taskId == null) {

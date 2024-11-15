@@ -4,3 +4,5 @@ export const executeJwtAuthenticationService = (username, password) => apiClient
     "username": username,
     "password": password
 })
+
+export const registration = (user) => apiClient.post("/create", user);

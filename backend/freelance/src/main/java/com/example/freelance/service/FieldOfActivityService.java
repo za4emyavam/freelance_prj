@@ -46,8 +46,8 @@ public class FieldOfActivityService {
 
         if (field.getField() != null)
             oldField.setField(field.getField());
-        if (field.getIsActive())
-            oldField.setIsActive(true);
+
+        oldField.setIsActive(field.getIsActive());
 
         return fieldOfActivityRepository.update(oldField);
     }

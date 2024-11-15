@@ -75,7 +75,7 @@ export default function ContractorTaskComponent() {
                             className="absolute text-center top-[400px] ">
                             {(task.status === 'ACTIVE' && task.contractorStatus === null) && (
                                 <div
-                                    className="relative left-[120px] w-[150px] mt-3 font-semibold text-lg bg-green-500 dark:bg-green-500 rounded text-gray-100 hover:bg-green-600"
+                                    className="relative left-[120px] w-[150px] mt-3 font-semibold text-lg bg-green-500  rounded text-gray-100 hover:bg-green-600"
                                     onClick={toggleModalRequest}>
                                     <p className="p-2">
                                         Request to task
@@ -124,27 +124,27 @@ export default function ContractorTaskComponent() {
                                 <div className="ml-3">
                                     {task.status === 'PERFORMING' ?
                                         <div
-                                            className="text-center font-semibold bg-purple-500 dark:bg-purple-500 rounded w-[130px] text-purple-950">
+                                            className="text-center font-semibold bg-purple-500 rounded w-[130px] text-purple-950">
                                             <p className="p-2">
                                                 {task.status}
                                             </p>
                                         </div>
                                         : task.status === 'DONE' ?
                                             <div
-                                                className="text-center w-[130px] font-semibold bg-green-500 dark:bg-green-500 rounded text-green-950">
+                                                className="text-center w-[130px] font-semibold bg-green-500 rounded text-green-950">
                                                 <p className="p-2">
                                                     {task.status}
                                                 </p>
                                             </div>
                                             : task.status === 'ACTIVE' ?
                                                 <div
-                                                    className="text-center w-[130px] font-semibold bg-blue-500 dark:bg-blue-500 rounded text-blue-950">
+                                                    className="text-center w-[130px] font-semibold bg-blue-500 rounded text-blue-950">
                                                     <p className="p-2">
                                                         {task.status}
                                                     </p>
                                                 </div>
                                                 : <div
-                                                    className="text-center w-[130px] font-semibold bg-red-500 dark:bg-red-500 rounded text-red-950">
+                                                    className="text-center w-[130px] font-semibold bg-red-500 rounded text-red-950">
                                                     <p className="p-2">
                                                         {task.status}
                                                     </p>
@@ -161,7 +161,7 @@ export default function ContractorTaskComponent() {
                     </div>
                     <div className="ml-20">
 
-                        <div className="mt-2 p-3 dark:bg-gray-800 dark:border-gray-700 rounded-lg text-gray-200">
+                        <div className="mt-2 p-3 bg-gray-800 border-gray-700 rounded-lg text-gray-200">
                             <div className="text-right">
                                 Date of creation:
                                 <span className="text-gray-300 ml-1">

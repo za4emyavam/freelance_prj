@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {useAuth} from "../security/AuthContext";
 import getDefRoutes from "../js/getDefRoutes";
 
@@ -103,7 +103,9 @@ export default function LoginComponent() {
                                     </div>
                                 </button>
                                 <div className="pr-2 py-2 justify-start items-start gap-2.5 inline-flex">
-                                    <div></div>
+                                    <div className="hover:text-blue-500"><Link to={"/registration"}>
+                                        If you haven't account yet you can create new one here
+                                    </Link></div>
                                 </div>
                             </div>
                         </div>

@@ -73,14 +73,14 @@ export default function TasksComponent() {
     return (
         <div className="flex justify-center mt-10">
             <div className="overflow-x-auto sm:rounded-lg w-3/4">
-                <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <table className="w-full text-sm text-left rtl:text-right text-gray-400">
                     <caption
-                        className="p-5 text-2xl font-semibold text-left rtl:text-right text-gray-800 dark:bg-gray-300">
+                        className="p-5 text-2xl font-semibold text-left rtl:text-right text-gray-800 bg-gray-300">
 
                         <div className="flex justify-between items-center">
                             <div>
                                 Your tasks
-                                <p className="mt-1 text-lg font-normal text-gray-600 dark:text-gray-600">
+                                <p className="mt-1 text-lg font-normal text-gray-600">
                                     Browse a list
                                     of
                                     tasks that you created.
@@ -89,14 +89,13 @@ export default function TasksComponent() {
 
 
                             <Link to="/customer/tasks/create"
-                                  className="px-4 py-2 text-gray-700 bg-gray-50 rounded dark:bg-gray-700
-                                  dark:text-gray-400 hover:bg-gray-400 hover:text-gray-800">
+                                  className="px-4 py-2 text-gray-400 bg-gray-700 rounded hover:bg-gray-400 hover:text-gray-800">
                                 Create new task
                             </Link>
                         </div>
 
                     </caption>
-                    <thead className="text-lg text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <thead className="text-lg uppercase  bg-gray-700 text-gray-400">
                     <tr>
                         <th scope="col" className="px-6 py-3">
                             Task name
@@ -158,10 +157,10 @@ export default function TasksComponent() {
                     <tbody>
                     {tasks.map((task) => (
                         <tr key={task.idTask}
-                            className="text-lg bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                            className="text-lg  bg-gray-800 border-gray-700 hover:bg-gray-600"
                             onClick={() => handleTaskClick(task.idTask)}>
                             <th scope="row"
-                                className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                className="px-6 py-4 font-medium whitespace-nowrap text-white">
                                 {task.name}
                             </th>
                             <td className="px-6 py-4">
@@ -176,27 +175,27 @@ export default function TasksComponent() {
                             <td className="px-6 py-4">
                                 {task.status === 'PERFORMING' ?
                                     <div
-                                        className="text-center font-semibold bg-purple-500 dark:bg-purple-500 rounded w-[130px] text-purple-950">
+                                        className="text-center font-semibold bg-purple-500 rounded w-[130px] text-purple-950">
                                         <p className="p-2">
                                             {task.status}
                                         </p>
                                     </div>
                                     : task.status === 'DONE' ?
                                         <div
-                                            className="text-center w-[130px] font-semibold bg-green-500 dark:bg-green-500 rounded text-green-950">
+                                            className="text-center w-[130px] font-semibold bg-green-500 rounded text-green-950">
                                             <p className="p-2">
                                                 {task.status}
                                             </p>
                                         </div>
                                         : task.status === 'ACTIVE' ?
                                             <div
-                                                className="text-center w-[130px] font-semibold bg-blue-500 dark:bg-blue-500 rounded text-blue-950">
+                                                className="text-center w-[130px] font-semibold bg-blue-500 rounded text-blue-950">
                                                 <p className="p-2">
                                                     {task.status}
                                                 </p>
                                             </div>
                                             : <div
-                                                className="text-center w-[130px] font-semibold bg-red-500 dark:bg-red-500 rounded text-red-950">
+                                                className="text-center w-[130px] font-semibold bg-red-500 rounded text-red-950">
                                                 <p className="p-2">
                                                     {task.status}
                                                 </p>

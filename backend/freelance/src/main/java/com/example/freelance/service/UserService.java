@@ -1,33 +1,40 @@
 package com.example.freelance.service;
 
 import com.example.freelance.entities.User;
+import com.example.freelance.entities.dto.CreateUserDTO;
+import com.example.freelance.entities.dto.PeriodRequestDTO;
 import com.example.freelance.entities.dto.UpdateUserDTO;
 import com.example.freelance.entities.dto.UserInfoDTO;
 import com.example.freelance.repositories.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.Objects;
+import java.util.Optional;
 
 //TODO EXCEPTIONS
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     public User getByEmail(String email) {
-        return userRepository.getByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        Optional<User> user = userRepository.getByEmail(email);
+        if (user.isPresent()) {
+            return user.get();
+        } else {
+            if (userRepository.getRole(email).equals("admin"))
+                return new User(0L, email, null, null, null, null, null, null, null, null, User.UserRole.ADMIN, null, User.UserStatus.ACTIVE);
+
+            throw new RuntimeException("User not found");
+        }
     }
 
     public UserDetailsService userDetailsService() {
@@ -36,15 +43,6 @@ public class UserService {
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
-    }
-
-    public User save(User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new IllegalArgumentException("Email address already in use");
-        }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-
-        return userRepository.save(user);
     }
 
     public UserInfoDTO update(UpdateUserDTO updatedUser) {
@@ -91,5 +89,26 @@ public class UserService {
 
     public boolean isUserActive(String email) {
         return userRepository.isUserActive(email);
+    }
+
+    public User createUser(CreateUserDTO createUserDTO) {
+        if (userRepository.existsByEmail(createUserDTO.getEmail())) {
+            throw new IllegalArgumentException("Email address already in use");
+        }
+
+        if (!createUserDTO.getRole().equals("CUSTOMER") && !createUserDTO.getRole().equals("CONTRACTOR")) {
+            throw new IllegalArgumentException("Illegal role");
+        }
+
+        return userRepository.save(createUserDTO);
+    }
+
+    public int countRegisteredUsersForPeriod(PeriodRequestDTO period) {
+        LocalDate dateTo = period.getTo().plusDays(1);
+        return userRepository.countRegisterUsers(period.getFrom(), dateTo);
+    }
+
+    public double getAverageRating() {
+        return userRepository.getAverageRating();
     }
 }

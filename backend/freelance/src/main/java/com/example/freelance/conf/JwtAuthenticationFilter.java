@@ -2,6 +2,7 @@ package com.example.freelance.conf;
 
 import com.example.freelance.entities.User;
 import com.example.freelance.service.UserService;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,14 +45,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         var jwt = authHeader.substring(BEARER_PREFIX.length());
-        var username = jwtService.extractUserName(jwt);
+        var username = "";
+        try {
+            username = jwtService.extractUserName(jwt);
+        } catch (ExpiredJwtException ex) {
+            System.out.println("TOKEN EXPIRED.");
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.getWriter().write("Token expired.");
+            return;
+        }
+
 
         if (StringUtils.hasLength(username) && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userService
                     .userDetailsService()
                     .loadUserByUsername(username);
 
-            if (!userService.isUserActive(userDetails.getUsername())) {
+            if (!userDetails.getAuthorities().toArray()[0].toString().equals("ROLE_ADMIN") && !userService.isUserActive(userDetails.getUsername())) {
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.getWriter().write("Account is deactivated.");
                 return;

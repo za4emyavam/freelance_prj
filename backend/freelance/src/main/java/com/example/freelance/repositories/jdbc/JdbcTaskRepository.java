@@ -422,6 +422,27 @@ public class JdbcTaskRepository implements TaskRepository {
         return list.isEmpty() ? Optional.empty() : Optional.of(list.getFirst());
     }
 
+    @Override
+    public int countTaskByStatusWithPeriod(Task.Status status, LocalDate from, LocalDate to) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from task where status=? AND creation_date BETWEEN ? AND ?",
+                Integer.class,
+                status.toString(),
+                from,
+                to
+        );
+    }
+
+    @Override
+    public int countTaskWithNoDoneStatus(LocalDate from, LocalDate to) {
+        return jdbcTemplate.queryForObject(
+                "select count(*) from task where status<>'DONE' AND creation_date BETWEEN ? AND ?",
+                Integer.class,
+                from,
+                to
+        );
+    }
+
     private Task mapToTask(ResultSet rs, int rowNum) throws SQLException {
         Long taskId = rs.getLong("id_task");
         List<TaskFile> taskFiles = findTaskFileByTask(taskId);
